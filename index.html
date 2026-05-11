@@ -17,37 +17,54 @@
 <body class="bg-gradient-to-r from-black via-gray-900 to-orange-600 text-white min-h-screen flex items-center justify-center">
   <div class="container p-6 rounded shadow-lg bg-white text-black max-w-lg animate__animated animate__fadeIn" data-aos="zoom-in">
     <h1 class="text-center text-3xl font-bold text-orange-600 mb-4">Calculadora CTS Perú</h1>
-    <p class="text-sm text-gray-600 mb-4 text-center">Ingresa tus datos según tu boleta de pago. La gratificación corresponde a julio/diciembre y la asignación familiar solo aplica si tienes hijos menores.</p>
+    <p class="text-sm text-gray-600 mb-4 text-center">Completa los campos según tu boleta de pago. El cálculo se ajusta automáticamente según tu régimen laboral.</p>
     
     <form id="ctsForm" class="space-y-3">
-      <div data-step="1" data-intro="Ingresa tu sueldo mensual según tu boleta de pago. Este es el valor base para calcular tu CTS.">
-        <label class="form-label">Sueldo mensual (S/):</label>
-        <input type="number" id="sueldo" class="form-control" required>
+      <!-- Régimen laboral -->
+      <div data-step="1" data-intro="Selecciona tu régimen laboral. Esto determina si corresponde CTS completa, parcial o no aplica.">
+        <label class="form-label">Régimen laboral:</label>
+        <select id="regimen" class="form-select" required>
+          <option value="privada">Privada</option>
+          <option value="pyme">Pequeña empresa (PYME)</option>
+          <option value="mype">Microempresa (MYPE)</option>
+          <option value="publica">Sector público</option>
+        </select>
+        <small class="text-muted">Privada: CTS completa · PYME: 50% · MYPE/Pública: no corresponde.</small>
       </div>
 
-      <div class="form-check mt-2" data-step="2" data-intro="Marca esta casilla si recibes asignación familiar. Solo aplica si tienes hijos menores.">
+      <div data-step="2" data-intro="Ingresa tu sueldo mensual según tu boleta de pago.">
+        <label class="form-label">Sueldo mensual (S/):</label>
+        <input type="number" id="sueldo" class="form-control" required>
+        <small class="text-muted">Lo encuentras en tu boleta de pago como “Remuneración básica”.</small>
+      </div>
+
+      <div class="form-check mt-2" data-step="3" data-intro="Marca esta casilla si recibes asignación familiar.">
         <input class="form-check-input" type="checkbox" id="checkAsignacion">
         <label class="form-check-label">¿Recibes asignación familiar?</label>
       </div>
 
-      <div id="asignacionDiv" class="hidden" data-step="3" data-intro="Si marcaste la casilla anterior, ingresa el monto de asignación familiar que aparece en tu boleta.">
+      <div id="asignacionDiv" class="hidden">
         <label class="form-label">Asignación familiar (S/):</label>
         <input type="number" id="asignacion" class="form-control" value="0">
+        <small class="text-muted">Monto fijo establecido por ley, aparece en tu boleta si corresponde.</small>
       </div>
 
-      <div data-step="4" data-intro="Ingresa el monto de la gratificación recibida en julio o diciembre. La ley exige sumar 1/6 de este valor al cálculo.">
+      <div data-step="4" data-intro="Ingresa el monto de la gratificación recibida en julio o diciembre.">
         <label class="form-label">Gratificación recibida (S/):</label>
         <input type="number" id="grati" class="form-control" value="0">
+        <small class="text-muted">Corresponde a un sueldo adicional en julio y diciembre. Usa el valor bruto.</small>
       </div>
 
       <div data-step="5" data-intro="Indica cuántos meses trabajaste en el semestre (máximo 6).">
         <label class="form-label">Meses trabajados en el semestre:</label>
         <input type="number" id="meses" class="form-control" max="6" required>
+        <small class="text-muted">Cuenta desde mayo a octubre o noviembre a abril, según el depósito.</small>
       </div>
 
       <div data-step="6" data-intro="Si trabajaste días adicionales además de los meses completos, ingrésalos aquí.">
         <label class="form-label">Días trabajados adicionales:</label>
         <input type="number" id="dias" class="form-control" value="0">
+        <small class="text-muted">Ejemplo: si empezaste el 15 de un mes, coloca los días trabajados.</small>
       </div>
 
       <button type="submit" class="btn btn-warning w-100 mt-3 hover:scale-105 transition" data-step="7" data-intro="Haz clic aquí para calcular tu CTS automáticamente.">Calcular CTS</button>
@@ -57,8 +74,8 @@
   </div>
 
   <!-- Botón flotante para relanzar el tour -->
-  <button onclick="iniciarTour()" class="fixed bottom-5 right-5 bg-orange-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-orange-500 transition">
-    ¿Cómo usar?
+  <button onclick="iniciarTour()" class="fixed bottom-5 right-5 bg-orange-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-orange-500 transition flex items-center gap-2">
+    ❓ ¿Cómo usar?
   </button>
 
   <!-- Librerías JS -->
@@ -77,14 +94,25 @@
     // Lógica CTS
     document.getElementById("ctsForm").addEventListener("submit", function(e){
       e.preventDefault();
+      let regimen = document.getElementById("regimen").value;
       let sueldo = parseFloat(document.getElementById("sueldo").value);
       let asignacion = document.getElementById("checkAsignacion").checked ? parseFloat(document.getElementById("asignacion").value) : 0;
       let grati = parseFloat(document.getElementById("grati").value);
       let meses = parseInt(document.getElementById("meses").value);
       let dias = parseInt(document.getElementById("dias").value);
 
+      // Validaciones por régimen
+      if (regimen === "mype" || regimen === "publica") {
+        document.getElementById("resultado").innerText = "En este régimen no corresponde CTS.";
+        return;
+      }
+
       let remuneracion = sueldo + asignacion + (grati/6);
       let cts = (remuneracion/6) * meses + (remuneracion/360) * dias;
+
+      if (regimen === "pyme") {
+        cts = cts / 2; // PYME recibe 50%
+      }
 
       document.getElementById("resultado").innerText = "Tu CTS es: S/ " + cts.toFixed(2);
     });
@@ -110,4 +138,4 @@
     };
   </script>
 </body>
-</html> 
+</html>
